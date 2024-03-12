@@ -1,0 +1,12 @@
+1) Generate text to speech audio:
+https://elevenlabs.io/
+
+2) Convert audio (mp3) to ogg format:
+https://convertio.co/
+
+3) Download and setup Rhubarb LypSync:
+a) download the package for specific OS
+b) extract and add it to project directory
+
+4) Convert audio file with Rhubard lypSync
+rhubarb -f json ../public/audios/[file-name].ogg -o [file-name].json
