@@ -1,6 +1,5 @@
 import { Environment, OrbitControls, useTexture } from "@react-three/drei";
 import { Avatar } from "./Avatar";
-import { log } from "console";
 import { useThree } from "@react-three/fiber";
 
 export function Experience() {
