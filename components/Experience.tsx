@@ -1,17 +1,22 @@
 import { Environment, OrbitControls, useTexture } from "@react-three/drei";
 import { Avatar } from "./Avatar";
 import { useThree } from "@react-three/fiber";
+import { LevaPanel } from "leva";
+import { Suspense } from "react";
 
 export function Experience() {
   // load texture
   const texture = useTexture("textures/youtubeBackground.jpg");
   // get viewport
   const viewport = useThree((state) => state.viewport);
-
   return (
     <>
       <OrbitControls />
-      <Avatar position={[0, -3, 5]} scale={2} />
+      {/* <LevaPanel /> */}
+      <Suspense fallback={null}>
+        <Avatar position={[0, -3, 5]} scale={2} />
+        {/* <StacyAvatar position={[0, -3, 5]} scale={2} /> */}
+      </Suspense>
       <Environment preset="sunset" />
       <mesh>
         <planeGeometry args={[viewport.width, viewport.height]} />

@@ -1,20 +1,38 @@
+"use client";
 import * as THREE from "three";
-import React, { useEffect, useMemo, useRef, useState } from "react";
+import React, {
+  useCallback,
+  useEffect,
+  useMemo,
+  useRef,
+  useState,
+} from "react";
 import { useAnimations, useFBX, useGLTF } from "@react-three/drei";
 import { useControls } from "leva";
 import { useFrame, useLoader } from "@react-three/fiber";
 import { GLTFResult, corresponding } from "@/utils/avatar.utils";
 
 export function Avatar(props: JSX.IntrinsicElements["group"]) {
-  const { playAudio, script } = useControls({
+  // console.log("avatar rendered");
+
+  const {
+    playAudio,
+    script,
+    smoothMorphTarget,
+    morphTargetSmoothing,
+    headFollow,
+  } = useControls({
     playAudio: false,
+    smoothMorphTarget: true,
+    morphTargetSmoothing: 0.5,
+    headFollow: true,
     script: {
       value: "introduction",
       options: ["introduction", "angry"],
     },
   });
 
-  const audio = useMemo(() => new Audio(`/audios/${script}.ogg`), [script]);
+  const audio = useMemo(() => new Audio(`/audios/${script}.mp3`), [script]);
   const jsonFile: string = useLoader(
     THREE.FileLoader,
     `/audios/${script}.json`
@@ -25,22 +43,51 @@ export function Avatar(props: JSX.IntrinsicElements["group"]) {
     const currentAudioTime = audio.currentTime;
 
     if (audio.paused || audio.ended) {
-      setAnimation("Greeting");
+      setAnimation("Idle");
+      return;
     }
 
     Object.values(corresponding).forEach((value) => {
-      // head
-      const morphHeadIndex = nodes?.Wolf3D_Head?.morphTargetDictionary?.[value];
-      const morphHeadInfluence = nodes?.Wolf3D_Head?.morphTargetInfluences;
-      if (morphHeadInfluence && morphHeadIndex !== undefined)
-        morphHeadInfluence[morphHeadIndex] = 0;
+      if (!smoothMorphTarget) {
+        // head
+        const morphHeadIndex =
+          nodes?.Wolf3D_Head?.morphTargetDictionary?.[value];
+        const morphHeadInfluence = nodes?.Wolf3D_Head?.morphTargetInfluences;
 
-      // teeth
-      const morphTeethIndex =
-        nodes?.Wolf3D_Teeth?.morphTargetDictionary?.[value];
-      const morphTeethInfluence = nodes?.Wolf3D_Teeth?.morphTargetInfluences;
-      if (morphTeethInfluence && morphTeethIndex !== undefined)
-        morphTeethInfluence[morphTeethIndex] = 0;
+        if (morphHeadInfluence && morphHeadIndex !== undefined)
+          morphHeadInfluence[morphHeadIndex] = 0;
+
+        // teeth
+        const morphTeethIndex =
+          nodes?.Wolf3D_Teeth?.morphTargetDictionary?.[value];
+        const morphTeethInfluence = nodes?.Wolf3D_Teeth?.morphTargetInfluences;
+
+        if (morphTeethInfluence && morphTeethIndex !== undefined)
+          morphTeethInfluence[morphTeethIndex] = 0;
+      } else {
+        // head
+        const morphHeadIndex =
+          nodes?.Wolf3D_Head?.morphTargetDictionary?.[value];
+        const morphHeadInfluence = nodes?.Wolf3D_Head?.morphTargetInfluences;
+        if (morphHeadInfluence && morphHeadIndex !== undefined)
+          morphHeadInfluence[morphHeadIndex] = THREE.MathUtils.lerp(
+            morphHeadInfluence[morphHeadIndex],
+            0,
+            morphTargetSmoothing
+          );
+
+        // teeth
+        const morphTeethIndex =
+          nodes?.Wolf3D_Teeth?.morphTargetDictionary?.[value];
+        const morphTeethInfluence = nodes?.Wolf3D_Teeth?.morphTargetInfluences;
+
+        if (morphTeethInfluence && morphTeethIndex !== undefined)
+          morphTeethInfluence[morphTeethIndex] = THREE.MathUtils.lerp(
+            morphTeethInfluence[morphTeethIndex],
+            0,
+            morphTargetSmoothing
+          );
+      }
     });
 
     for (let i = 0; i < lipsync.mouthCues.length; i++) {
@@ -49,25 +96,55 @@ export function Avatar(props: JSX.IntrinsicElements["group"]) {
         currentAudioTime >= mouthCue.start &&
         currentAudioTime <= mouthCue.end
       ) {
-        console.log(mouthCue.value);
+        // console.log(mouthCue.value);
 
-        // head
-        const morphHeadIndex =
-          nodes?.Wolf3D_Head?.morphTargetDictionary?.[
-            corresponding[mouthCue.value as keyof typeof corresponding]
-          ];
-        const morphHeadInfluence = nodes?.Wolf3D_Head?.morphTargetInfluences;
-        if (morphHeadInfluence && morphHeadIndex !== undefined)
-          morphHeadInfluence[morphHeadIndex] = 1;
+        if (!smoothMorphTarget) {
+          // head
+          const morphHeadIndex =
+            nodes?.Wolf3D_Head?.morphTargetDictionary?.[
+              corresponding[mouthCue.value as keyof typeof corresponding]
+            ];
+          const morphHeadInfluence = nodes?.Wolf3D_Head?.morphTargetInfluences;
+          if (morphHeadInfluence && morphHeadIndex !== undefined)
+            morphHeadInfluence[morphHeadIndex] = 1;
 
-        // teeth
-        const morphTeethIndex =
-          nodes?.Wolf3D_Teeth?.morphTargetDictionary?.[
-            mouthCue.value as keyof typeof corresponding
-          ];
-        const morphTeethInfluence = nodes?.Wolf3D_Teeth?.morphTargetInfluences;
-        if (morphTeethInfluence && morphTeethIndex !== undefined)
-          morphTeethInfluence[morphTeethIndex] = 1;
+          // teeth
+          const morphTeethIndex =
+            nodes?.Wolf3D_Teeth?.morphTargetDictionary?.[
+              mouthCue.value as keyof typeof corresponding
+            ];
+          const morphTeethInfluence =
+            nodes?.Wolf3D_Teeth?.morphTargetInfluences;
+          if (morphTeethInfluence && morphTeethIndex !== undefined)
+            morphTeethInfluence[morphTeethIndex] = 1;
+        } else {
+          // head
+          const morphHeadIndex =
+            nodes?.Wolf3D_Head?.morphTargetDictionary?.[
+              corresponding[mouthCue.value as keyof typeof corresponding]
+            ];
+          const morphHeadInfluence = nodes?.Wolf3D_Head?.morphTargetInfluences;
+          if (morphHeadInfluence && morphHeadIndex !== undefined)
+            morphHeadInfluence[morphHeadIndex] = THREE.MathUtils.lerp(
+              morphHeadInfluence[morphHeadIndex],
+              1,
+              morphTargetSmoothing
+            );
+
+          // teeth
+          const morphTeethIndex =
+            nodes?.Wolf3D_Teeth?.morphTargetDictionary?.[
+              mouthCue.value as keyof typeof corresponding
+            ];
+          const morphTeethInfluence =
+            nodes?.Wolf3D_Teeth?.morphTargetInfluences;
+          if (morphTeethInfluence && morphTeethIndex !== undefined)
+            morphTeethInfluence[morphTeethIndex] = THREE.MathUtils.lerp(
+              morphTeethInfluence[morphTeethIndex],
+              1,
+              morphTargetSmoothing
+            );
+        }
 
         break;
       }
@@ -79,7 +156,6 @@ export function Avatar(props: JSX.IntrinsicElements["group"]) {
       audio.play();
       if (script === "introduction") {
         setAnimation("Idle");
-        console.log(animation);
       } else {
         setAnimation("Angry");
       }
@@ -87,46 +163,46 @@ export function Avatar(props: JSX.IntrinsicElements["group"]) {
       setAnimation("Idle");
       audio.pause();
     }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [playAudio, script]);
+  }, [audio, playAudio, script]);
 
   const { nodes, materials } = useGLTF(
     "/models/65c41941bee65ecd7a20fc68_arkit_oculus_visemes.glb"
   ) as GLTFResult;
 
-  const { animations: angryAnimation } = useFBX(
-    "/animations/Angry Gesture.fbx"
-  );
-  const { animations: idleAnimation } = useFBX(
-    "/animations/Standing W_Briefcase Idle.fbx"
-  );
-  const { animations: greetingAnimation } = useFBX("/animations/Waving.fbx");
+  const { animations } = useGLTF("/animations/animations.glb");
 
-  //   console.log(greetingAnimation);
-
-  idleAnimation[0].name = "Idle";
-  angryAnimation[0].name = "Angry";
-  greetingAnimation[0].name = "Greeting";
-
-  const [animation, setAnimation] = useState("Greeting");
+  const [animation, setAnimation] = useState("Idle");
 
   const group = useRef<THREE.Group>(null!);
 
-  const { actions } = useAnimations(
-    [idleAnimation[0], angryAnimation[0], greetingAnimation[0]],
-    group
-  );
+  const { actions, mixer, names } = useAnimations(animations, group);
 
+  // console.log(names);
+
+  // Change animation when the index changes
   useEffect(() => {
+    // Reset and fade in animation after an index has been changed
     actions[animation]?.reset().fadeIn(0.5).play();
+    // In the clean-up phase, fade it out
     return () => {
       actions[animation]?.fadeOut(0.5);
-      console.log("fadeOut:", animation);
     };
-  }, [animation, actions]);
+  }, [actions, names, animation]);
+
+  // CODE ADDED AFTER THE TUTORIAL (but learnt in the portfolio tutorial ♥️)
+  useFrame((state) => {
+    if (headFollow) {
+      group?.current?.getObjectByName("Head")?.lookAt(state.camera.position);
+    }
+  });
 
   return (
-    <group {...props} dispose={null} ref={group}>
+    <group
+      {...props}
+      dispose={null}
+      ref={group}
+      // onClick={() => setIndex(index + 1)}
+    >
       <primitive object={nodes.Hips} />
       <skinnedMesh
         name="EyeLeft"
@@ -185,3 +261,4 @@ export function Avatar(props: JSX.IntrinsicElements["group"]) {
 }
 
 useGLTF.preload("/models/65c41941bee65ecd7a20fc68_arkit_oculus_visemes.glb");
+useGLTF.preload("/animations/animations.glb");
